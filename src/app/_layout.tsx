@@ -4,7 +4,12 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import React from "react";
-import { ActivityIndicator, useColorScheme, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from "react-native";
 
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import AppTabs from "@/components/app-tabs";
@@ -12,6 +17,8 @@ import AppTabs from "@/components/app-tabs";
 import { useFonts } from "expo-font";
 import AuthProvider from "@/providers/AuthProvider";
 import { useAuth } from "@/ctx/AuthContext";
+import IntroScreen from "@/components/auth/IntroScreen";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 function TabLayoutNav() {
   const [loaded, error] = useFonts({
@@ -25,13 +32,23 @@ function TabLayoutNav() {
     console.log("is loading");
 
     return (
-      <View>
+      <View style={styles.container}>
         <ActivityIndicator size={"large"} color={"white"} />
       </View>
     );
   }
 
   console.log("loaded!");
+
+  if (!session) {
+    return (
+      <ThemeProvider value={DefaultTheme}>
+        <GestureHandlerRootView>
+          <IntroScreen />
+        </GestureHandlerRootView>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <AuthProvider>
@@ -54,3 +71,14 @@ export default function TabLayout() {
     </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loadinngContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});
