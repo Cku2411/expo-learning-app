@@ -1,24 +1,40 @@
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Dimensions, Text, View } from "react-native";
 import { verticalScale } from "react-native-size-matters";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useFonts } from "expo-font";
 import { EBGaramond_500Medium_Italic } from "@expo-google-fonts/eb-garamond";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Fontisto from "@expo/vector-icons/Fontisto";
 import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
+import {
+  StyleSheet,
+  Dimensions,
+  Text,
+  View,
+  Keyboard,
+  Platform,
+  Pressable,
+  Image,
+} from "react-native";
 
 import { Colors } from "@/constants/theme";
 
 // === VARIABLE ==
 const { width, height } = Dimensions.get("window");
-const videoSource = require("../../../assets/videos/broll.mp4");
+const videoSource = require("@/assets/videos/broll.mp4");
+const logoSource = require("@/assets/images/convo-minimal.png");
 const MENU_HEIGHT = 250;
+const PEEK_MENU_HEIGHT = 50;
+const CLOSED_POSITION = MENU_HEIGHT - PEEK_MENU_HEIGHT;
 
 const MAIN_TEXTWORD: string[] = ["Learn", "Mandarin", "the", "right", "way"];
 const SCRIPT_PHRASES: string[] = [
@@ -31,6 +47,9 @@ const SCRIPT_PHRASES: string[] = [
 // == MAIN COMPONENTS ==
 const IntroScreen = () => {
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<"login" | "email">("login");
   const [fontsLoaded] = useFonts({ EBGaramond_500Medium_Italic });
 
   // ref to track mounted state and pending timeouts
@@ -39,8 +58,15 @@ const IntroScreen = () => {
   const innerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const insets = useSafeAreaInsets();
+
   const scriptTextOpacity = useSharedValue(0);
   const mainTextOpacity = useSharedValue(0);
+  const menuTranslateY = useSharedValue(CLOSED_POSITION);
+  const menuContentOpacity = useSharedValue(1);
+
+  const dynamicMenuHeight =
+    keyboardHeight > 0 ? MENU_HEIGHT + keyboardHeight + 50 : MENU_HEIGHT + 100;
 
   // FIX 1: PLayer is trigger one in useEffect
   const player = useVideoPlayer(videoSource, (player) => {
@@ -79,6 +105,14 @@ const IntroScreen = () => {
     ],
   }));
 
+  const menuAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: menuTranslateY.value }],
+  }));
+
+  const menuContentAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: menuContentOpacity.value,
+  }));
+
   // == ANIMATE HELPER ===
 
   const animateTextIn = () => {
@@ -93,6 +127,83 @@ const IntroScreen = () => {
 
   const animateScriptIn = () => {
     scriptTextOpacity.value = withTiming(1, { duration: 600 });
+  };
+
+  const animateMenu = (open: boolean) => {
+    menuTranslateY.value = withSpring(open ? 0 : CLOSED_POSITION, {
+      damping: 30,
+      stiffness: 200,
+      mass: 1,
+    });
+  };
+
+  const handlePress = () => {
+    setIsMenuOpen((prev) => !prev);
+    animateMenu(!isMenuOpen);
+  };
+
+  const renderLoginView = () => {
+    return (
+      <Animated.View style={[styles.viewContainer, menuContentAnimatedStyle]}>
+        <View style={styles.logoSection}>
+          <View style={styles.logoContainer}>
+            <Image source={logoSource} style={styles.logo} />
+            <Text style={styles.appName}>Vivi</Text>
+          </View>
+
+          <View style={styles.statsContainer}>
+            <Text style={styles.rating}>Start today</Text>
+          </View>
+        </View>
+
+        <View style={styles.buttonsContainer}>
+          <Pressable
+            style={styles.loginButton}
+            onPress={() => {
+              console.log("android login");
+            }}
+          >
+            <AntDesign
+              name="android"
+              size={16}
+              color="white"
+              style={styles.appleIcon}
+            />
+            <Text style={styles.buttonText}>Continue with Google</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.loginButton}
+            onPress={() => {
+              console.log("android login");
+            }}
+          >
+            <AntDesign
+              name="apple"
+              size={16}
+              color="white"
+              style={styles.appleIcon}
+            />
+            <Text style={styles.buttonText}>Continue with Apple</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.loginButton}
+            onPress={() => {
+              console.log("android login");
+            }}
+          >
+            <Fontisto
+              name="email"
+              size={16}
+              color="white"
+              style={styles.emailIcon}
+            />
+            <Text style={styles.buttonText}>Continue with Email</Text>
+          </Pressable>
+        </View>
+      </Animated.View>
+    );
   };
 
   // === PHRASE CYCLING ===
@@ -159,6 +270,27 @@ const IntroScreen = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const keyboardWillSHowListener = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+      },
+    );
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+      },
+    );
+
+    return () => {
+      keyboardWillSHowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  });
+
   // ===== MAIN RETURN===
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -199,6 +331,23 @@ const IntroScreen = () => {
           </Animated.View>
         </View>
       )}
+
+      {/* // slindign menu with dynamic height */}
+      <Animated.View
+        style={[
+          styles.menuContainer,
+          menuAnimatedStyle,
+          { height: dynamicMenuHeight, paddingBottom: insets.bottom + 30 },
+        ]}
+      >
+        <Pressable style={styles.handleContainer} onPress={handlePress}>
+          <View style={styles.handle}></View>
+        </Pressable>
+
+        <View style={styles.menuContent}>
+          {currentView === "login" ? renderLoginView() : null}
+        </View>
+      </Animated.View>
     </View>
   );
 };
