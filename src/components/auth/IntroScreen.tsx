@@ -35,6 +35,7 @@ const IntroScreen = () => {
 
   // ref to track mounted state and pending timeouts
   const isMounted = useRef(true);
+  const phaseIndexRef = useRef(0);
   const innerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -45,7 +46,7 @@ const IntroScreen = () => {
   const player = useVideoPlayer(videoSource, (player) => {
     player.muted = true;
     player.loop = true;
-    player.play();
+    // player.play();
   });
 
   // ANIMATED STYLES ==
@@ -94,61 +95,69 @@ const IntroScreen = () => {
     scriptTextOpacity.value = withTiming(1, { duration: 600 });
   };
 
-  //  ==== PHARSE CYCLING LOGIC ===
-
-  const scheduleNextPhase = () => {
-    loopTimeoutRef.current = setTimeout(() => {
-      if (!isMounted.current) return;
-
-      animateScriptOut();
-
-      innerTimeoutRef.current = setTimeout(() => {
+  // === PHRASE CYCLING ===
+  // Self-scheduling recursive setTimeout — no double-scheduling, no race conditions.
+  // phaseIndexRef tracks the index without triggering re-renders inside the loop.
+  const startCycle = () => {
+    const cycle = () => {
+      setTimeout(() => {
         if (!isMounted.current) return;
 
-        setCurrentPhaseIndex((prev) => {
-          const next = (prev + 1) % SCRIPT_PHRASES.length;
-          return next;
-        });
-      }, 500);
-    }, 3500);
+        // 1. Fade out current phrase
+        scriptTextOpacity.value = withTiming(0, { duration: 500 });
+
+        setTimeout(() => {
+          if (!isMounted.current) return;
+
+          // 2. Advance index and update state (triggers re-render with new phrase text)
+          phaseIndexRef.current =
+            (phaseIndexRef.current + 1) % SCRIPT_PHRASES.length;
+          setCurrentPhaseIndex(phaseIndexRef.current);
+
+          setTimeout(() => {
+            if (!isMounted.current) return;
+
+            // 3. Fade in new phrase
+            scriptTextOpacity.value = withTiming(1, { duration: 600 });
+
+            // 4. Schedule the next cycle
+            cycle();
+          }, 150); // small delay for state to flush before animating in
+        }, 500); // wait for fade-out to finish
+      }, 3500); // display duration per phrase
+    };
+
+    cycle();
   };
 
   useEffect(() => {
     isMounted.current = true;
     player.play();
 
-    // Small delay before first text animation so layout is settled
-
     const introTimeout = setTimeout(() => {
       if (!isMounted.current) return;
-      animateTextIn();
-      // Start cycling after the intro animation settles
-      scheduleNextPhase();
+
+      // Fade in main text, then script text with a delay
+      mainTextOpacity.value = withTiming(1, { duration: 1200 });
+      scriptTextOpacity.value = withDelay(
+        800,
+        withTiming(1, { duration: 800 }),
+      );
+
+      // Start cycling after the intro animation completes (~1600ms total)
+      const cycleStartTimeout = setTimeout(() => {
+        if (!isMounted.current) return;
+        startCycle();
+      }, 1600);
+
+      return () => clearTimeout(cycleStartTimeout);
     }, 300);
 
-    // clearn up
     return () => {
-      // unmount
       isMounted.current = false;
       clearTimeout(introTimeout);
-      if (innerTimeoutRef.current) clearTimeout(innerTimeoutRef.current);
-      if (loopTimeoutRef.current) clearTimeout(loopTimeoutRef.current);
     };
   }, []);
-
-  // Animate new pharse in whenever index changes
-  useEffect(() => {
-    if (currentPhaseIndex === 0) return; // skip initial mount
-    const time = setTimeout(() => {
-      if (!isMounted.current) return;
-      animateScriptIn();
-    }, 150);
-
-    // Schedule the next cycle after this phrase is shown
-    scheduleNextPhase();
-
-    return () => clearTimeout(time);
-  }, [currentPhaseIndex]);
 
   // ===== MAIN RETURN===
   return (
@@ -157,7 +166,7 @@ const IntroScreen = () => {
         nativeControls={false}
         player={player}
         contentFit="cover"
-        style={[StyleSheet.absoluteFill]}
+        style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
       />
 
       {/* Overlay */}
