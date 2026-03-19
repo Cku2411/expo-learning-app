@@ -10,11 +10,16 @@ import React, { useState } from "react";
 import Animated from "react-native-reanimated";
 import Entypo from "@expo/vector-icons/Entypo";
 import { toast } from "sonner-native";
+import { makeRedirectUri } from "expo-auth-session";
+import { supabase } from "@/utils/supabase";
 
 type Props = {
   onBack: () => void;
   menuContentAnimatedStyle: any;
 };
+
+const redirectTo = makeRedirectUri();
+console.log({ redirectTo });
 
 const EmailAuth = ({ onBack, menuContentAnimatedStyle }: Props) => {
   const [email, setEmail] = useState("");
@@ -31,7 +36,23 @@ const EmailAuth = ({ onBack, menuContentAnimatedStyle }: Props) => {
     setLoading(true);
 
     try {
-    } catch (error) {}
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: redirectTo,
+        },
+      });
+      if (error) {
+        toast.error(error.message);
+        throw error;
+      } else {
+        toast.success("Check your email for the login link");
+      }
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

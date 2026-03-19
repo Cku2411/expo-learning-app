@@ -10,6 +10,8 @@ import {
   StyleSheet,
   useColorScheme,
   View,
+  Text,
+  StatusBar,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Toaster } from "sonner-native";
@@ -19,14 +21,17 @@ import AppTabs from "@/components/app-tabs";
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import IntroScreen from "@/components/auth/IntroScreen";
 import AuthProvider from "@/providers/AuthProvider";
+import { useDeepLinking } from "@/hooks/useDeepLinking";
+import { Stack } from "expo-router";
 
 function TabLayoutNav() {
+  const { session, loading, profile } = useAuth();
   const [loaded, error] = useFonts({
     SpaceMono: require("../../assets/fonts/SpaceMono-Regular.ttf"),
   });
   const colorScheme = useColorScheme();
 
-  const { session, loading, profile } = useAuth();
+  useDeepLinking();
 
   if (!loaded || loading) {
     console.log("is loading");
@@ -39,6 +44,7 @@ function TabLayoutNav() {
   }
 
   console.log("loaded! but no users");
+  console.log({ session });
 
   if (!session) {
     return (
@@ -53,8 +59,14 @@ function TabLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <Stack>
+        <Stack.Screen name="(tab)" />
+        <Stack.Screen
+          name="modal"
+          options={{ presentation: "modal", title: "Modal" }}
+        />
+      </Stack>
+      <StatusBar />
     </ThemeProvider>
   );
 }

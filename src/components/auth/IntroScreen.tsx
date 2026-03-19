@@ -29,6 +29,7 @@ import {
 
 import { Colors } from "@/constants/theme";
 import EmailAuth from "./EmailAuth";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 // === VARIABLE ==
 const { width, height } = Dimensions.get("window");
@@ -114,6 +115,27 @@ const IntroScreen = () => {
   const menuContentAnimatedStyle = useAnimatedStyle(() => ({
     opacity: menuContentOpacity.value,
   }));
+
+  const panGesture = Gesture.Pan().onEnd((event) => {
+    "worklet";
+    const swipeThresshold = 58;
+    const isUpSwipe = event.translationY < -swipeThresshold;
+    const isDownSwipe = event.translationY > -swipeThresshold;
+
+    if (isUpSwipe) {
+      menuTranslateY.value = withSpring(0, {
+        damping: 30,
+        stiffness: 200,
+        mass: 1,
+      });
+    } else if (isDownSwipe) {
+      menuTranslateY.value = withSpring(CLOSED_POSITION, {
+        damping: 30,
+        stiffness: 200,
+        mass: 1,
+      });
+    }
+  });
 
   // == ANIMATE HELPER ===
 
@@ -354,21 +376,23 @@ const IntroScreen = () => {
       )}
 
       {/* // slindign menu with dynamic height */}
-      <Animated.View
-        style={[
-          styles.menuContainer,
-          menuAnimatedStyle,
-          { height: dynamicMenuHeight, paddingBottom: insets.bottom + 30 },
-        ]}
-      >
-        <Pressable style={styles.handleContainer} onPress={handlePress}>
-          <View style={styles.handle}></View>
-        </Pressable>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View
+          style={[
+            styles.menuContainer,
+            menuAnimatedStyle,
+            { height: dynamicMenuHeight, paddingBottom: insets.bottom + 30 },
+          ]}
+        >
+          <Pressable style={styles.handleContainer} onPress={handlePress}>
+            <View style={styles.handle}></View>
+          </Pressable>
 
-        <View style={styles.menuContent}>
-          {currentView === "login" ? renderLoginView() : renderEmailView()}
-        </View>
-      </Animated.View>
+          <View style={styles.menuContent}>
+            {currentView === "login" ? renderLoginView() : renderEmailView()}
+          </View>
+        </Animated.View>
+      </GestureDetector>
     </View>
   );
 };
