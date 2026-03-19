@@ -24,9 +24,11 @@ import {
   Platform,
   Pressable,
   Image,
+  Button,
 } from "react-native";
 
 import { Colors } from "@/constants/theme";
+import EmailAuth from "./EmailAuth";
 
 // === VARIABLE ==
 const { width, height } = Dimensions.get("window");
@@ -137,6 +139,16 @@ const IntroScreen = () => {
     });
   };
 
+  const animateToEmailView = (to: "email" | "login") => {
+    // fade of menucontent and fade on email
+    menuContentOpacity.value = withTiming(0, { duration: 200 });
+    // after 0.2s fade on menuEmai
+    setTimeout(() => {
+      setCurrentView(to);
+      menuContentOpacity.value = withTiming(1, { duration: 200 });
+    }, 200);
+  };
+
   const handlePress = () => {
     setIsMenuOpen((prev) => !prev);
     animateMenu(!isMenuOpen);
@@ -190,7 +202,7 @@ const IntroScreen = () => {
           <Pressable
             style={styles.loginButton}
             onPress={() => {
-              console.log("android login");
+              animateToEmailView("email");
             }}
           >
             <Fontisto
@@ -203,6 +215,15 @@ const IntroScreen = () => {
           </Pressable>
         </View>
       </Animated.View>
+    );
+  };
+
+  const renderEmailView = () => {
+    return (
+      <EmailAuth
+        onBack={() => animateToEmailView("login")}
+        menuContentAnimatedStyle={menuContentAnimatedStyle}
+      />
     );
   };
 
@@ -345,7 +366,7 @@ const IntroScreen = () => {
         </Pressable>
 
         <View style={styles.menuContent}>
-          {currentView === "login" ? renderLoginView() : null}
+          {currentView === "login" ? renderLoginView() : renderEmailView()}
         </View>
       </Animated.View>
     </View>

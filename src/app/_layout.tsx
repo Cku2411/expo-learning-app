@@ -1,3 +1,4 @@
+import { useFonts } from "expo-font";
 import {
   DarkTheme,
   DefaultTheme,
@@ -10,15 +11,14 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-
-import { AnimatedSplashOverlay } from "@/components/animated-icon";
-import AppTabs from "@/components/app-tabs";
-
-import { useFonts } from "expo-font";
-import AuthProvider from "@/providers/AuthProvider";
-import { useAuth } from "@/ctx/AuthContext";
-import IntroScreen from "@/components/auth/IntroScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Toaster } from "sonner-native";
+
+import { useAuth } from "@/ctx/AuthContext";
+import AppTabs from "@/components/app-tabs";
+import { AnimatedSplashOverlay } from "@/components/animated-icon";
+import IntroScreen from "@/components/auth/IntroScreen";
+import AuthProvider from "@/providers/AuthProvider";
 
 function TabLayoutNav() {
   const [loaded, error] = useFonts({
@@ -38,25 +38,24 @@ function TabLayoutNav() {
     );
   }
 
-  console.log("loaded!");
+  console.log("loaded! but no users");
 
   if (!session) {
     return (
       <ThemeProvider value={DefaultTheme}>
         <GestureHandlerRootView>
           <IntroScreen />
+          <Toaster />
         </GestureHandlerRootView>
       </ThemeProvider>
     );
   }
 
   return (
-    <AuthProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <AnimatedSplashOverlay />
-        <AppTabs />
-      </ThemeProvider>
-    </AuthProvider>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <AnimatedSplashOverlay />
+      <AppTabs />
+    </ThemeProvider>
   );
 }
 
