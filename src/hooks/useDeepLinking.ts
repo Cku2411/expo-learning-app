@@ -5,21 +5,18 @@ import { useEffect } from "react";
 import { toast } from "sonner-native";
 
 const createSessionFromUrl = async (url: string) => {
-  const { params, errorCode } = getQueryParams(url);
+  // Parse fragment (#access_token=...&refresh_token=...)
+  const fragment = url.split("#")[1];
+  if (!fragment) return;
 
-  if (errorCode) {
-    console.error("Deep link error", errorCode);
-    throw new Error(errorCode);
-  }
-
+  const params = Object.fromEntries(new URLSearchParams(fragment));
   const { access_token, refresh_token } = params;
-  if (!access_token) {
-    return;
-  }
+
+  if (!access_token) return;
 
   const { data, error } = await supabase.auth.setSession({
     access_token,
-    refresh_token,
+    refresh_token: refresh_token ?? "",
   });
 
   if (error) {
@@ -27,6 +24,7 @@ const createSessionFromUrl = async (url: string) => {
     throw error;
   }
 
+  console.log("Session created!", data.session);
   return data.session;
 };
 
@@ -39,6 +37,8 @@ export const useDeepLinking = () => {
   console.log("====================================");
 
   useEffect(() => {
+    console.log("vao day khong nhi");
+
     if (url) {
       createSessionFromUrl(url)
         .then((session) => {
@@ -47,8 +47,8 @@ export const useDeepLinking = () => {
           }
         })
         .catch((error) => {
-          console.log("Error creating sessiong");
-          toast.error("Faild to sign in. Please try again");
+          console.log("Error creating sessiong", error);
+          // toast.error("Faild to sign in. Please try again");
         });
     }
   }, [url]);

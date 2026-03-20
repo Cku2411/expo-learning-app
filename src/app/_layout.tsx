@@ -4,7 +4,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -22,63 +22,63 @@ import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import IntroScreen from "@/components/auth/IntroScreen";
 import AuthProvider from "@/providers/AuthProvider";
 import { useDeepLinking } from "@/hooks/useDeepLinking";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 
-function TabLayoutNav() {
+function RootNavigation() {
   const { session, loading, profile } = useAuth();
-  const [loaded, error] = useFonts({
+  const colorScheme = useColorScheme();
+
+  const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require("../../assets/fonts/SpaceMono-Regular.ttf"),
   });
-  const colorScheme = useColorScheme();
 
   useDeepLinking();
 
-  if (!loaded || loading) {
-    console.log("is loading");
+  // Redirect to onboarding once fonts + auth are ready
+  useEffect(() => {
+    if (!fontsLoaded || loading) return;
+    router.replace("/onboarding");
+  }, [fontsLoaded, loading]);
 
+  if (!fontsLoaded || loading || fontError) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size={"large"} color={"white"} />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="white" />
       </View>
     );
   }
 
-  console.log("loaded! but no users");
-  console.log({ session });
+  // console.log({ session });
 
-  if (!session) {
-    return (
-      <ThemeProvider value={DefaultTheme}>
-        <GestureHandlerRootView>
-          <IntroScreen />
-          <Toaster />
-        </GestureHandlerRootView>
-      </ThemeProvider>
-    );
-  }
+  // if (!session) {
+  //   return (
+  //     <ThemeProvider value={DefaultTheme}>
+  //       <GestureHandlerRootView>
+  //         <IntroScreen />
+  //         <Toaster />
+  //       </GestureHandlerRootView>
+  //     </ThemeProvider>
+  //   );
+  // }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tab)" />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
-      </Stack>
-      <StatusBar />
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.container}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tab)" options={{ headerShown: false }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        </Stack>
+        <Toaster />
+        <StatusBar />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
-export default function TabLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require("../../assets/fonts/SpaceMono-Regular.ttf"),
-  });
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
     <AuthProvider>
-      <TabLayoutNav />
+      <RootNavigation />
     </AuthProvider>
   );
 }
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadinngContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
