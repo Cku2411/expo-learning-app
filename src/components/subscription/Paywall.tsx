@@ -96,8 +96,14 @@ const Paywall = ({ visible, onClose }: Props) => {
   const [billingCycle, setBillingCycle] = useState<"annual" | "monthly">(
     "annual",
   );
+  const [isStartingTrial, setIsStartingTrial] = useState(false);
 
   const selectedPlan = plans[billingCycle];
+
+  //  === FUNCTION HELPER ===
+  const handleStartTrial = async () => {
+    console.log("Start trial");
+  };
 
   //  === MAIN RETURN ===
   return (
@@ -233,6 +239,63 @@ const Paywall = ({ visible, onClose }: Props) => {
             </View>
           </View>
           {/* CTA BUTTON */}
+
+          <Pressable
+            style={[styles.ctaButton, isStartingTrial && { opacity: 0.7 }]}
+            disabled={isStartingTrial}
+            onPress={handleStartTrial}
+          >
+            <Ionicons
+              name="star"
+              size={20}
+              style={styles.ctaIcon}
+              color="#fff"
+            />
+            <Text style={styles.ctaText}>
+              {isStartingTrial ? "Starting ..." : "Start my free week"}
+            </Text>
+          </Pressable>
+
+          {/* FOOTERT */}
+          <Text style={styles.footer}>Try 7 days free. Cancel any time.</Text>
+          <Text style={styles.footerNote}>
+            We'll send you a remainder before your trial ends.
+          </Text>
+
+          {/* Rating */}
+          <View style={styles.rating}>
+            <View style={styles.stars}>
+              {[...Array(5)].map((_, i) => (
+                <Ionicons name="star" key={i} size={18} color="#FFD700" />
+              ))}
+            </View>
+            <Text style={styles.ratingText}>4.8/5</Text>
+          </View>
+
+          {/* Testimonal */}
+          <View style={styles.testimonial}>
+            <Text style={styles.testimonialText}>
+              ViVi is all I need for learning chineses. Highly recommended.
+            </Text>
+            <Text style={styles.testimonialAuthor}> -- App store user.</Text>
+          </View>
+
+          {/* Legal links */}
+          <View style={styles.legalLinks}>
+            <Pressable>
+              <Text style={styles.legalLink}>Restore Purchase</Text>
+            </Pressable>
+            <Text style={styles.legalSeparator}>•</Text>
+            <Pressable>
+              <Text style={styles.legalLink}>Terms of Service</Text>
+            </Pressable>
+            <Text style={styles.legalSeparator}>•</Text>
+            <Pressable>
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.bottomSpacing}></View>
         </ScrollView>
       </SafeAreaView>
     </Modal>
