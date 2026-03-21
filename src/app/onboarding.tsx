@@ -93,7 +93,7 @@ const Onboarding = () => {
   const [level, setLevel] = useState<string | null>(null);
   const [motivations, setMotivations] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [showPaywall, setShowPaywall] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(true);
 
   const { refreshProfile } = useAuth();
 
