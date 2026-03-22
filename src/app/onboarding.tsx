@@ -409,7 +409,7 @@ const Onboarding = () => {
 
       <Paywall
         visible={showPaywall}
-        onClose={() => router.replace("/(tab)/explore")}
+        onClose={() => router.replace("/(tab)/lessons")}
       />
     </SafeAreaView>
   );

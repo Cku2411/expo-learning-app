@@ -103,6 +103,7 @@ const Paywall = ({ visible, onClose }: Props) => {
   //  === FUNCTION HELPER ===
   const handleStartTrial = async () => {
     console.log("Start trial");
+    onClose();
   };
 
   //  === MAIN RETURN ===
