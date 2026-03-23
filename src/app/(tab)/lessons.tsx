@@ -5,18 +5,32 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Colors } from "@/constants/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useSpeakingListeningStats } from "@/lib/useSpeakingListeningStats";
-import { useFocusEffect } from "expo-router";
-import { COURSE_DATA, Lesson } from "@/constants/CourseData";
+import { router, useFocusEffect } from "expo-router";
+
+import { Colors } from "@/constants/theme";
+import { Chapter, COURSE_DATA, Lesson } from "@/constants/CourseData";
 import { ThemedText } from "@/components/themed-text";
+import { useSpeakingListeningStats } from "@/lib/useSpeakingListeningStats";
+import { getAllProgress } from "@/lib/lessonProgress";
+// === CONTANST ===
+const MAX_STARS = 3;
 
 const LessonContent = () => {
   const colors = Colors["light"];
   const { loading, stats, refresh } = useSpeakingListeningStats();
+  const [progress, setProgress] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    loadProgress();
+  }, []);
+
+  const loadProgress = async () => {
+    const savedProgress = await getAllProgress();
+    setProgress(savedProgress);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -24,22 +38,70 @@ const LessonContent = () => {
     }, [refresh]),
   );
 
+  //  ==== HELPER FUNCS ===
+  const handleLessPress = (lesson: Lesson) => {
+    router.push({ pathname: "/pratices", params: { lessonId: lesson.id } });
+  };
+
+  const handlePractiseChapterPress = (chapter: Chapter) => {
+    if (chapter.review) {
+      router.push({
+        pathname: "/pratices",
+        params: { lessonId: chapter.review.id },
+      });
+    }
+  };
+
+  const renderCompletionStatus = (count: number) => {
+    const elements = [];
+    const starsToDisplay = Math.min(count, MAX_STARS);
+
+    for (let i = 1; i <= MAX_STARS; i++) {
+      elements.push(
+        <Ionicons
+          key={`star-${i}`}
+          name={i <= starsToDisplay ? "star" : "star-outline"}
+          size={16}
+          color={i <= starsToDisplay ? "#FFD700" : Colors.subduedTextColor}
+          style={styles.starIcon}
+        />,
+      );
+    }
+
+    if (count > MAX_STARS) {
+      const extraCount = count - MAX_STARS;
+      elements.push(
+        <ThemedText key="extra-count" style={styles.extraCountText}>
+          +{extraCount}
+        </ThemedText>,
+      );
+    }
+
+    return <View style={styles.completionStarsContainer}>{elements}</View>;
+  };
+
   const renderLessonNode = (lesson: Lesson, index: number) => {
+    const completionCount = progress[lesson.id] || 0;
+    const isMastered = completionCount >= MAX_STARS;
+    const aligment = index % 2 === 0 ? "flex-start" : "flex-end";
+
     return (
       <View
         key={lesson.id}
-        style={[styles.lessonNodeContainer, { alignItems: "flex-start" }]}
+        style={[styles.lessonNodeContainer, { alignItems: aligment }]}
       >
         <TouchableOpacity
           style={[
             styles.lessonBubble,
             {
               backgroundColor: colors.background,
-              borderColor: Colors.primaryAccentColor,
+              borderColor: isMastered
+                ? Colors.primaryAccentColor
+                : Colors.borderColor,
             },
           ]}
           onPress={() => {
-            console.log("click");
+            handleLessPress(lesson);
           }}
         >
           <Ionicons
@@ -50,6 +112,7 @@ const LessonContent = () => {
 
           <View style={styles.lessonTextContainer}>
             <ThemedText>{lesson.title}</ThemedText>
+            {renderCompletionStatus(completionCount)}
           </View>
         </TouchableOpacity>
       </View>
@@ -58,7 +121,10 @@ const LessonContent = () => {
 
   // === MAIN RETURN ====
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top", "left", "right"]}
+    >
       <View style={styles.container}>
         {/* HEADER */}
         <View
@@ -147,6 +213,23 @@ const LessonContent = () => {
               <View>
                 {chapter.lessons.map((les, idx) => renderLessonNode(les, idx))}
               </View>
+
+              {chapter.review && (
+                <TouchableOpacity
+                  style={[
+                    styles.practiceChapterButton,
+                    { backgroundColor: Colors.primaryAccentColor },
+                  ]}
+                  onPress={() => {
+                    handlePractiseChapterPress(chapter);
+                  }}
+                >
+                  <Ionicons name="flash" size={20} color="#FFF" />
+                  <ThemedText style={styles.practiceChapterButtonText}>
+                    Review '{chapter.title}'
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
             </View>
           ))}
         </ScrollView>
